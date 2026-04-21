@@ -8,6 +8,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Checkout source
         uses: actions/checkout@v5
