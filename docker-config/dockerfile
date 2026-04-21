@@ -1,0 +1,26 @@
+FROM eclipse-temurin:17-jre-alpine AS artifact
+
+WORKDIR /workspace
+COPY target/ ./target/
+
+RUN set -eux; \
+	jar="$(find ./target -maxdepth 1 -type f -name '*.jar' ! -name '*.original' | sort | grep '/app\.jar$' || true)"; \
+	if [ -z "$jar" ]; then \
+		jar="$(find ./target -maxdepth 1 -type f -name '*.jar' ! -name '*.original' | sort | head -n 1)"; \
+	fi; \
+	test -n "$jar"; \
+	cp "$jar" ./app.jar
+
+FROM eclipse-temurin:17-jre-alpine
+
+RUN apk add --no-cache tzdata \
+	&& addgroup -S spring \
+	&& adduser -S spring -G spring
+
+WORKDIR /app
+
+COPY --from=artifact /workspace/app.jar ./app.jar
+
+USER spring:spring
+
+ENTRYPOINT ["java","--enable-preview","-jar","/app/app.jar"]

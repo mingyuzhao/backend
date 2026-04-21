@@ -1,0 +1,25 @@
+version: '3.9'
+services:
+
+  @project.artifactId@:
+    image: tmmc.logistics/@project.artifactId@:@project.version@
+    ports:
+        - 8110:8110
+    volumes:
+        - type: bind
+          source: "/mnt/work/docker-applications/@project.artifactId@/config"
+          target: "/config"
+          read_only: true
+        - type: bind
+          source: "/mnt/work/docker-applications/@project.artifactId@/logs"
+          target: "/logs"
+        - type: bind
+          source: "/mnt/work/docker-applications/@project.artifactId@/externalFiles"
+          target: "/externalFiles"
+    hostname: @project.artifactId@
+    container_name: @project.artifactId@
+    environment:
+        - TZ=America/Toronto
+        - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+        - LOGGING_CONFIG=./config/log4j2-spring.xml
+    restart: unless-stopped

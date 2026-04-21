@@ -1,0 +1,65 @@
+name: Tectris Release Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    env:
+      JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Display runner context
+        run: id && env && pwd
+
+      - name: Configure git identity
+        run: |
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+          git config --global user.name "${{ github.actor }}"
+
+      - name: Sync checked out branch
+        run: |
+          git status
+          git reset --hard HEAD
+          git fetch --all --tags --prune
+          git checkout "${GITHUB_REF_NAME}"
+          git status
+
+      - name: Run Maven release
+        run: >-
+          mvn release:clean release:prepare release:perform
+          -Dmaven.test.skip=true
+          -Dmaven.javadoc.skip=true
+          -Dmaven.deploy.skip=true
+          -Darguments="-Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dmaven.deploy.skip=true"
+          --debug --errors --batch-mode
+
+      - name: Stage build artifacts
+        run: |
+          staging_dir="${RUNNER_TEMP}/tectris-api"
+          mkdir -p "$staging_dir/target" "$staging_dir/config" "$staging_dir/docker-config"
+          cp target/*.jar "$staging_dir/target/"
+          cp -R config/. "$staging_dir/config/"
+          cp -R target/classes/. "$staging_dir/docker-config/"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tectris-api
+          path: ${{ runner.temp }}/tectris-api
+          if-no-files-found: error
+
